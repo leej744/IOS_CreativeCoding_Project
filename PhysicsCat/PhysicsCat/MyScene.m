@@ -49,12 +49,12 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     uint32_t collision = (contact.bodyA.categoryBitMask|contact.bodyB.categoryBitMask);
     if (collision == (CNPhysicsCategoryCat|CNPhysicsCategoryBed))
     {
-        NSLog(@"SUCCESS");
+        [self win];
     }
     
     if (collision ==(CNPhysicsCategoryCat|CNPhysicsCategoryEdge)){
-        NSLog(@"FAIL");
-    }
+        [self lose];
+        }
 }
 -(instancetype)initWithSize:(CGSize)size {
     if (self = [super initWithSize:size]) {
@@ -110,6 +110,8 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     
     //
     _catNode.physicsBody.contactTestBitMask = CNPhysicsCategoryBed|CNPhysicsCategoryEdge;
+    //add proper collision bitmask for the cat
+    _catNode.physicsBody.collisionBitMask = CNPhysicsCategoryBlock | CNPhysicsCategoryEdge;
 }
 
 -(void)setupLevel:(int)levelNum{
@@ -167,5 +169,44 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
         [SKAction waitForDuration:3.0],
         [SKAction removeFromParent]]]];
     }
-
+-(void)newGame{
+    [_gameNode removeAllChildren];
+    [self setupLevel:_currentLevel];
+    [self inGameMessage:[NSString stringWithFormat:@"Level %i",_currentLevel]];
+}
+-(void)lose{
+    //1
+    _catNode.physicsBody.contactTestBitMask =0;
+    [_catNode setTexture:[SKTexture textureWithImageNamed:@"cat_awake"]];
+    
+    //2
+    [[SKTAudio sharedInstance] pauseBackgroundMusic];
+    [self runAction:[SKAction playSoundFileNamed:@"lose.mp3" waitForCompletion:NO]];
+    [self inGameMessage:@"Try Again..."];
+    
+    //3
+    [self runAction:[SKAction sequence:@[[SKAction waitForDuration:5.0],
+                                         [SKAction performSelector:@selector(newGame) onTarget:self]]]];
+}
+-(void)win{
+    //1
+    _catNode.physicsBody=nil;
+    //2
+    CGFloat curlY = _bedNode.position.y+_catNode.size.height/2;
+    CGPoint curlPoint = CGPointMake(_bedNode.position.x, curlY);
+    //3
+    [_catNode runAction:[SKAction group:
+                         @[[SKAction moveTo:curlPoint duration:0.66],
+                           [SKAction rotateToAngle:0 duration:0.5]]]];
+    [self inGameMessage:@"Good Job!"];
+    //4
+    [self runAction:[SKAction sequence:@[[SKAction waitForDuration:5.0], [SKAction performSelector:@selector(newGame) onTarget:self]]]];
+    //5
+    [_catNode runAction:
+       [SKAction animateWithTextures:@[[SKTexture textureWithImageNamed:@"cat_curlup1"], [SKTexture textureWithImageNamed:@"cat_curlup2"], [SKTexture textureWithImageNamed:@"cat_curlup3"]] timePerFrame:0.25]];
+    //6
+    [[SKTAudio sharedInstance] pauseBackgroundMusic];
+    [self runAction:[SKAction playSoundFileNamed:@"win.mp3" waitForCompletion:NO]];
+    
+}
 @end
