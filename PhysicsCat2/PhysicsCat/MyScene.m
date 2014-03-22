@@ -21,6 +21,7 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     CNPhysicsCategoryEdge =1 <<3,
     CNPhysicsCategoryLabel =1 <<4,
     CNPhysicsCategorySpring =1 <<5,
+    CNPhysicsCategoryHook =1 <<6, //1100000 =64
 };
 @interface MyScene()<SKPhysicsContactDelegate>
 @end
@@ -42,6 +43,11 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     [self.physicsWorld enumerateBodiesAtPoint:location usingBlock:^(SKPhysicsBody*body, BOOL *stop){
      //3
         if (body.categoryBitMask == CNPhysicsCategoryBlock){
+            for (SKPhysicsJoint* joint in body.joints) {
+                [self.physicsWorld removeJoint: joint];
+                [joint.bodyA.node removeFromParent];
+                [joint.bodyB.node removeFromParent];
+            }
             [body.node removeFromParent];
             *stop =YES;//4
             
@@ -53,6 +59,9 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
             [body applyImpulse:CGVectorMake(0, 12) atPoint:CGPointMake(spring.size.width/2, spring.size.height)];
             [body.node runAction:[SKAction sequence:@[[SKAction waitForDuration:1],[SKAction removeFromParent]]]];
             *stop =YES;
+        }
+        if (body.categoryBitMask == CNPhysicsCategoryCat && _isHooked) {
+            [self releaseHook];
         }
     }
      ];
@@ -67,8 +76,44 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     if (collision ==(CNPhysicsCategoryCat|CNPhysicsCategoryEdge)){
         [self lose];
         }
-}
--(instancetype)initWithSize:(CGSize)size {
+    if (collision == (CNPhysicsCategoryLabel|CNPhysicsCategoryEdge)) {
+        SKLabelNode* label = (contact.bodyA.categoryBitMask==CNPhysicsCategoryLabel)?(SKLabelNode*)contact.bodyA.node:(SKLabelNode*)contact.bodyB.node;
+        
+        if (label.userData==nil) {
+            label.userData = [@{@"bounceCount":@0} mutableCopy];
+        }
+        
+        int newBounceCount = [label.userData[@"bounceCount"] intValue]+1;
+        NSLog(@"bounce: %i", newBounceCount);
+        if (newBounceCount==4) {
+            [label removeFromParent];
+        } else {
+            label.userData = [@{@"bounceCount":@(newBounceCount)} mutableCopy];
+        }
+        
+    }
+    
+    if (collision == (CNPhysicsCategoryHook|CNPhysicsCategoryCat)) {
+        //1
+        _catNode.physicsBody.velocity = CGVectorMake(0, 0);
+        _catNode.physicsBody.angularVelocity = 0;
+        
+        //2
+        SKPhysicsJointFixed *hookJoint =
+        [SKPhysicsJointFixed
+         jointWithBodyA: _hookNode.physicsBody
+         bodyB: _catNode.physicsBody
+         anchor: CGPointMake(_hookNode.position.x,
+                             
+                             _hookNode.position.y+_hookNode.size.height/2) ];
+        
+        [self.physicsWorld addJoint:hookJoint];
+        
+        //3
+        _isHooked = YES;
+    }
+    
+}-(instancetype)initWithSize:(CGSize)size {
     if (self = [super initWithSize:size]) {
         [self initializeScene];
     }
@@ -76,6 +121,7 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
 }
 
 -(void) initializeScene{
+    _currentLevel =1;
     self.physicsBody=[SKPhysicsBody bodyWithEdgeLoopFromRect:self.frame];
     SKSpriteNode*bg =[SKSpriteNode spriteNodeWithImageNamed:@"background"];
     bg.position=CGPointMake(self.size.width/2, self.size.height/2);
@@ -139,16 +185,48 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
         [self addHookAtPosition:CGPointFromString(level[@"hookPosition"])];
     }
 }
--(void)addBlocksFromArray:(NSArray*)blocks{
-    //1
-    for (NSDictionary *block in blocks){
-        //2
-    
-        SKSpriteNode *blockSprite = [self addBlockWithRect:CGRectFromString(block[@"rect"])];
-        blockSprite.physicsBody.categoryBitMask = CNPhysicsCategoryBlock;
-        blockSprite.physicsBody.collisionBitMask = CNPhysicsCategoryBlock | CNPhysicsCategoryCat | CNPhysicsCategoryEdge;
-        [_gameNode addChild:blockSprite];
+-(void)addBlocksFromArray:(NSArray*)blocks
+{
+    for (NSDictionary *block in blocks) {
         
+        if (block[@"tuple"]) {
+            //1
+            CGRect rect1 = CGRectFromString([block[@"tuple"] firstObject]);
+            SKSpriteNode* block1 = [self addBlockWithRect: rect1];
+            block1.physicsBody.friction = 0.8;
+            block1.physicsBody.categoryBitMask =
+            CNPhysicsCategoryBlock;
+            block1.physicsBody.collisionBitMask =
+            CNPhysicsCategoryBlock | CNPhysicsCategoryCat |
+            CNPhysicsCategoryEdge;
+            [_gameNode addChild: block1];
+            
+            //2
+            CGRect rect2 = CGRectFromString([block[@"tuple"] lastObject]);
+            SKSpriteNode* block2 = [self addBlockWithRect: rect2];
+            block2.physicsBody.friction = 0.8;
+            block2.physicsBody.categoryBitMask =
+            CNPhysicsCategoryBlock;
+            block2.physicsBody.collisionBitMask =
+            CNPhysicsCategoryBlock | CNPhysicsCategoryCat |
+            CNPhysicsCategoryEdge;
+            [_gameNode addChild: block2];
+            
+            [self.physicsWorld addJoint: [SKPhysicsJointFixed
+                                          jointWithBodyA: block1.physicsBody
+                                          bodyB: block2.physicsBody
+                                          anchor:CGPointZero]
+             ];
+            
+        } else {
+            SKSpriteNode *blockSprite = [self addBlockWithRect:CGRectFromString(block[@"rect"])];
+            blockSprite.physicsBody.categoryBitMask =
+            CNPhysicsCategoryBlock;
+            blockSprite.physicsBody.collisionBitMask =
+            CNPhysicsCategoryBlock | CNPhysicsCategoryCat |
+            CNPhysicsCategoryEdge;
+            [_gameNode addChild:blockSprite];
+        }
     }
 }
 -(SKSpriteNode*)addBlockWithRect:(CGRect)blockRect{
@@ -167,7 +245,7 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
 -(void)inGameMessage:(NSString*) text{
     SKLabelNode *label =[SKLabelNode labelNodeWithFontNamed:@"AvenirNext-Regular"];
     label.text =text;
-    label.fontSize =64.0;
+    label.fontSize =30.0;
     label.color= [SKColor whiteColor];
     //2
     label.position =CGPointMake(self.frame.size.width/2, self.frame.size.height -10);
@@ -191,6 +269,9 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     [self inGameMessage:[NSString stringWithFormat:@"Level %i",_currentLevel]];
 }
 -(void)lose{
+    if (_currentLevel>1) {
+        _currentLevel--;
+    }
     //1
     _catNode.physicsBody.contactTestBitMask =0;
     [_catNode setTexture:[SKTexture textureWithImageNamed:@"cat_awake"]];
@@ -205,6 +286,9 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
                                          [SKAction performSelector:@selector(newGame) onTarget:self]]]];
 }
 -(void)win{
+    if (_currentLevel<3) {
+        _currentLevel++;
+    }
     //1
     _catNode.physicsBody=nil;
     //2
@@ -228,8 +312,13 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
 
 //chapter10
 -(void)didSimulatePhysics{
+    CGFloat angle =
+    CGPointToAngle(CGPointSubtract(_hookBaseNode.position,
+                                   _hookNode.position));
+    
+    _ropeNode.zRotation = M_PI + angle;
     if(_catNode.physicsBody.contactTestBitMask && fabs(_catNode.zRotation)>DegreesToRadians(25)){
-        [self lose];
+        if (_isHooked==NO) [self lose];
     }
 }
 -(void)addSpringsFromArray:(NSArray *)springs{
@@ -256,5 +345,40 @@ typedef NS_OPTIONS(uint32_t, CNPhysicsCategory){
     _hookBaseNode.position =CGPointMake(hookPosition.x, hookPosition.y-_hookBaseNode.size.height/2);
     _hookBaseNode.physicsBody=[SKPhysicsBody bodyWithRectangleOfSize:_hookBaseNode.size];
     [_gameNode addChild:_hookBaseNode];
+    SKPhysicsJointFixed *ceilingFix = [SKPhysicsJointFixed jointWithBodyA:_hookBaseNode.physicsBody bodyB:self.physicsBody anchor:CGPointZero];
+    [self.physicsWorld addJoint:ceilingFix];
+    
+    _hookNode = [SKSpriteNode spriteNodeWithImageNamed:@"hook"];
+    _hookNode.position = CGPointMake(hookPosition.x,
+                                     hookPosition.y-63);
+    _hookNode.physicsBody =
+    [SKPhysicsBody bodyWithCircleOfRadius:
+     _hookNode.size.width/2];
+    _hookNode.physicsBody.categoryBitMask = CNPhysicsCategoryHook;
+    _hookNode.physicsBody.contactTestBitMask = CNPhysicsCategoryCat;
+    _hookNode.physicsBody.collisionBitMask = kNilOptions;
+    
+    [_gameNode addChild: _hookNode];
+    
+    SKPhysicsJointSpring *ropeJoint = [SKPhysicsJointSpring
+                                       jointWithBodyA:_hookBaseNode.physicsBody
+                                       bodyB:_hookNode.physicsBody
+                                       anchorA:_hookBaseNode.position
+                                       anchorB: CGPointMake(_hookNode.position.x,
+                                       _hookNode.position.y+_hookNode.size.height/2)];
+    
+    [self.physicsWorld addJoint:ropeJoint];
+    _ropeNode = [SKSpriteNode spriteNodeWithImageNamed:@"rope"];
+    _ropeNode.anchorPoint = CGPointMake(0, 0.5);
+    _ropeNode.position = _hookBaseNode.position;
+    [_gameNode addChild: _ropeNode];
+}
+- (void)releaseHook
+{
+    _catNode.zRotation = 0;
+    
+    [self.physicsWorld removeJoint:
+     _hookNode.physicsBody.joints.lastObject];
+    _isHooked = NO;
 }
 @end
