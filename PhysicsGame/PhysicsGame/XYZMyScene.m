@@ -130,8 +130,6 @@ static const uint32_t boxCategory   = 0x1 << 1; // series of box
     
     _myJoint3 =[SKPhysicsJointLimit jointWithBodyA:_mySquare3.physicsBody bodyB:_mySquare4.physicsBody anchorA:_mySquare3.position anchorB:_mySquare4.position];
     [self.physicsWorld addJoint:_myJoint3];
-    
-
 }
 
 

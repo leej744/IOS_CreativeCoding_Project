@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>0B1274AA-98CF-43B9-BA57-DEAB53F57F55</string>
+	<key>IDESourceControlProjectName</key>
+	<string>fishtank</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>CA50F453-16BD-4EFE-B146-35D729E23DCA</key>
+		<string>https://github.com/leej744/IOS_CreativeCoding_Project.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>fishtank/fishtank.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>CA50F453-16BD-4EFE-B146-35D729E23DCA</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/leej744/IOS_CreativeCoding_Project.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>CA50F453-16BD-4EFE-B146-35D729E23DCA</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>CA50F453-16BD-4EFE-B146-35D729E23DCA</string>
+			<key>IDESourceControlWCCName</key>
+			<string>IOS_CreativeCoding_Project</string>
+		</dict>
+	</array>
+</dict>
+</plist>
