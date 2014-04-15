@@ -90,6 +90,8 @@ static const float OBJECT_VELOCITY = 50.0;
 
 @interface MyScene()
 @property SKSpriteNode* enemy;
+@property SKSpriteNode* fish;
+
 @property SKSpriteNode* fishTail1;
 @property SKSpriteNode* fishTail2;
 @property SKSpriteNode* fishTail3;
@@ -111,26 +113,25 @@ static const float OBJECT_VELOCITY = 50.0;
     SKAction *_enemyCollisionSound;
     SKAction *_backgroundSound;
     BOOL _invincible;
-
 }
--(void) fishclass{// I tried to draw a rainbow as a background but couldn't... this is smile face shape.
+-(void) fishclass{
     _enemy =[SKSpriteNode spriteNodeWithImageNamed:@"enemy"];
     [_enemy setPosition:CGPointMake(200, 200)];
     _enemy.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:_enemy.size];
     [self addChild:_enemy];
 
-    _fishTail1 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail1"];
+    _fishTail1 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail01"];
     [_fishTail1 setPosition:CGPointMake(210, 230)];
     _fishTail1.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:_fishTail1.size];
     [self addChild:_fishTail1];
     
-    _fishTail2 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail2"];
-    [_fishTail2 setPosition:CGPointMake(210, 230)];
+    _fishTail2 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail02"];
+    [_fishTail2 setPosition:CGPointMake(210, 250)];
     _fishTail2.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:_fishTail2.size];
     [self addChild:_fishTail2];
     
-    _fishTail3 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail3"];
-    [_fishTail3 setPosition:CGPointMake(210, 230)];
+    _fishTail3 =  [SKSpriteNode spriteNodeWithImageNamed:@"fishtail03"];
+    [_fishTail3 setPosition:CGPointMake(210, 270)];
     _fishTail3.physicsBody = [SKPhysicsBody bodyWithRectangleOfSize:_fishTail3.size];
     [self addChild:_fishTail3];
     
@@ -273,10 +274,10 @@ static const float OBJECT_VELOCITY = 50.0;
 
         
         //add background music
-        [[SKTAudio sharedInstance] playBackgroundMusic:@"WaterLake5.mp3"];
+        [[SKTAudio sharedInstance] playBackgroundMusic:@"bg1.mp3"];
 
         //add character
-        _character = [SKSpriteNode spriteNodeWithImageNamed:@"character"];
+        _character = [SKSpriteNode spriteNodeWithImageNamed:@"character0"];
         _character.position = CGPointMake(100, 100);
         _character.zPosition = 100;
         [self addChild:_character];
@@ -301,7 +302,7 @@ static const float OBJECT_VELOCITY = 50.0;
         }
         // 4
         _characterAnimation =
-        [SKAction animateWithTextures:textures timePerFrame:0.4];
+        [SKAction animateWithTextures:textures timePerFrame:0.6];
         // 5 edit
         [_character runAction:
          [SKAction repeatActionForever:_characterAnimation]];
@@ -547,7 +548,7 @@ static const float OBJECT_VELOCITY = 50.0;
                                    //[water removeFromParent];
                                    [self runAction:_waterCollisionSound];
                                    water.name = @"train";
-                                   [water removeAllActions];
+                                   //[water removeAllActions];
                                    [water setScale:0.4];
                                    water.zRotation = 0;
                                    [water runAction:[SKAction colorizeWithColor:[SKColor whiteColor] colorBlendFactor:1.0 duration:0.2]];
